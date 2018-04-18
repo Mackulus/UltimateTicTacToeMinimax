@@ -12,7 +12,7 @@ namespace UltimateTicTacToeMinimax
         public const int Rows = 9;
 
         public enum GameStatus { XWon, OWon, Tie, MovesAvailable };
-        
+
         public const char PlayerX = 'X';
         public const char PlayerO = 'O';
         public const char Tied = 'T';
@@ -46,7 +46,7 @@ namespace UltimateTicTacToeMinimax
                 macroboard = value;
             }
         }
-                      
+
 
         public UltimateBoard()
         {
@@ -113,7 +113,7 @@ namespace UltimateTicTacToeMinimax
                 for (int x = 0; x < 3; x++)
                 {
                     macroboard[x, y] = s[counter];
-                    counter++;                    
+                    counter++;
                 }
 
                 // Skip |
@@ -247,6 +247,119 @@ namespace UltimateTicTacToeMinimax
                    (board[x + 2, y] == player && board[x + 1, y + 1] == player && board[x, y + 2] == player);
         }
 
+        public bool IsInCenterOfMicroBoard(char[,] board, int col, int row, char player)
+        {
+            if (col < 0 || col > 2)
+                throw new ArgumentException("col must be 0-2.");
+            if (row < 0 || row > 2)
+                throw new ArgumentException("row must be 0-2.");
+
+            int x = col * 3;
+            int y = row * 3;
+
+            return (board[x + 1, y + 1] == player);
+        }
+
+        public int IsInCornerOfMicroBoard(char[,] board, int col, int row, char player)
+        {
+            int numCorners = 0;
+            if (col < 0 || col > 2)
+                throw new ArgumentException("col must be 0-2.");
+            if (row < 0 || row > 2)
+                throw new ArgumentException("row must be 0-2.");
+
+            int x = col * 3;
+            int y = row * 3;
+
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j = j + 2)
+                {
+                    if (board[x * j, y * i] == player)
+                    {
+                        numCorners++;
+                    }
+                }
+            }
+            return numCorners;
+        }
+
+        public int PossibleWinLocations(char[,] board, int col, int row, char player)
+        {
+            int numWinLocations = 0;
+            if (col < 0 || col > 2)
+                throw new ArgumentException("col must be 0-2.");
+            if (row < 0 || row > 2)
+                throw new ArgumentException("row must be 0-2.");
+
+            int x = col * 3;
+            int y = row * 3;
+
+            //Is Center Empty?
+            if(board[x+1, y+1] == Empty)
+            {
+                if (board[x, y] == player && board[x + 2, y + 2] == player)
+                    numWinLocations++;
+                if (board[x + 2, y] == player && board[x, y + 2] == player)
+                    numWinLocations++;
+            }
+
+            //Top left corner
+            if (board[x, y] == player)
+            {
+                if (board[x + 1, y] == player && board[x + 2, y] == Empty)
+                    numWinLocations++;
+                if (board[x, y + 1] == player && board[x, y + 2] == Empty)
+                    numWinLocations++;
+                if (board[x + 1, y + 1] == player && board[x + 2, y + 2] == Empty)
+                    numWinLocations++;
+            }
+            //Top right corner
+            if (board[x + 2, y] == player)
+            {
+                if (board[x + 1, y] == player && board[x, y] == Empty)
+                    numWinLocations++;
+                if (board[x + 2, y + 1] == player && board[x + 2, y + 2] == Empty)
+                    numWinLocations++;
+                if (board[x + 1, y + 1] == player && board[x, y + 2] == Empty)
+                    numWinLocations++;
+            }
+            //Bottom left corner
+            if (board[x, y + 2] == player)
+            {
+                if (board[x + 1, y + 2] == player && board[x + 2, y + 2] == Empty)
+                    numWinLocations++;
+                if (board[x, y + 1] == player && board[x, y] == Empty)
+                    numWinLocations++;
+                if (board[x + 1, y + 1] == player && board[x + 2, y] == Empty)
+                    numWinLocations++;
+            }
+            //Bottom right corner
+            if (board[x + 2, y + 2] == player)
+            {
+                if (board[x + 1, y + 2] == player && board[x, y + 2] == Empty)
+                    numWinLocations++;
+                if (board[x + 2, y + 1] == player && board[x + 2, y] == Empty)
+                    numWinLocations++;
+                if (board[x + 1, y + 1] == player && board[x, y] == Empty)
+                    numWinLocations++;
+            }
+            //Top Middle
+            if (board[x + 1, y] == player && board[x + 1, y + 1] == player && board[x + 1, y + 2] == Empty)
+                numWinLocations++;
+            //Left middle
+            if (board[x, y + 1] == player && board[x + 1, y + 1] == player && board[x + 2, y + 1] == Empty)
+                numWinLocations++;
+            //Right Middle
+            if (board[x + 2, y + 1] == player && board[x + 1, y + 1] == player && board[x, y + 1] == Empty)
+                numWinLocations++;
+            //Bottom Middle
+            if (board[x + 1, y + 2] == player && board[x + 1, y + 1] == player && board[x + 1, y] == Empty)
+                numWinLocations++;
+
+            return numWinLocations;
+        }
+
         private bool IsWinner(char[,] macroboard, char player)
         {
             return IsWinnerMicroBoard(macroboard, 0, 0, player);
@@ -269,7 +382,12 @@ namespace UltimateTicTacToeMinimax
             return board[x, y];
         }
 
-        // Score is number of X wins minus O wins
+        // Score is calculated first by looking for wins, then by looking at number
+        // of microboards that the player is in the center, then by looking at number
+        // of microboard corners are possessed, then by looking at the number of possible
+        // win locations for a player. Any positives for the X player are added to the score
+        // and any positives for the O player are subtracted from the score. Wins are given
+        // precendence because they should be worth more.
         public int GetScore()
         {
             int score = 0;
@@ -279,9 +397,17 @@ namespace UltimateTicTacToeMinimax
                 for (int x = 0; x < UltimateBoard.Cols / 3; x++)
                 {
                     if (IsWinnerMicroBoard(board, x, y, PlayerX))
-                        score++;
+                        score += 5;
                     else if (IsWinnerMicroBoard(board, x, y, PlayerO))
+                        score -= 5;
+                    else if (IsInCenterOfMicroBoard(board, x, y, PlayerX))
+                        score++;
+                    else if (IsInCenterOfMicroBoard(board, x, y, PlayerO))
                         score--;
+                    score += IsInCornerOfMicroBoard(board, x, y, PlayerX);
+                    score -= IsInCornerOfMicroBoard(board, x, y, PlayerO);
+                    score += PossibleWinLocations(board, x, y, PlayerX);
+                    score += PossibleWinLocations(board, x, y, PlayerO);
                 }
             }
 
@@ -297,7 +423,7 @@ namespace UltimateTicTacToeMinimax
             {
                 for (int x = 0; x < UltimateBoard.Cols / 3; x++)
                 {
-                    sb.Append(macroboard[x, y]);                    
+                    sb.Append(macroboard[x, y]);
                 }
                 sb.Append("\n");
             }
@@ -322,6 +448,6 @@ namespace UltimateTicTacToeMinimax
 
             return sb.ToString();
         }
-        
+
     }
 }

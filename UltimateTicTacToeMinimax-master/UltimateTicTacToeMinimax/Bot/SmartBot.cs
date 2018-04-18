@@ -28,9 +28,8 @@ namespace UltimateTicTacToeMinimax.Bot
             //}
 
             //// pass
-            //return null;     
+            //return null;   
 
-            //Who is moving?
             char player;
             if (state.Field.MyId == 0)
             {
@@ -46,8 +45,6 @@ namespace UltimateTicTacToeMinimax.Bot
 
         private Move Minimax(BotState state, char player, int level)
         {
-            // Are we at a terminal state? Player won? Bot won? etc.
-            // return score: 10, -10, 0
             var gameState = state.UltimateBoard.GetGameStatus();
             if (gameState == UltimateBoard.GameStatus.OWon)
             {
@@ -62,27 +59,26 @@ namespace UltimateTicTacToeMinimax.Bot
                 return new Move { Score = 0 };
             }
 
-            // Check level = some number that prevents us from running out of memory
-            // return back some kind of score
+            if (state.UltimateBoard.Board[4, 4] == '.')
+            {
+                return new Move(4, 4);
+            }
 
-            if (level == 2)
+            if (level == 5)
             {
                 var score = state.UltimateBoard.GetScore();
                 return new Move { Score = score };
             }
 
-            //For each available move
             var moves = state.UltimateBoard.AvailableMoves;
+
             foreach (var move in moves)
             {
-                //Save state of board and macroboard
                 var board = (char[,])state.UltimateBoard.Board.Clone();
                 var macroboard = (char[,])state.UltimateBoard.Macroboard.Clone();
-                //make the move
                 state.UltimateBoard.MakeMove(move, player);
 
-                //Console.WriteLine(state.UltimateBoard);
-                // Score each move by calling Minimax with the opposite player
+                Console.WriteLine(state.UltimateBoard);
                 if (player == UltimateBoard.PlayerX)
                 {
                     move.Score = Minimax(state, UltimateBoard.PlayerO, level + 1).Score;
@@ -92,13 +88,10 @@ namespace UltimateTicTacToeMinimax.Bot
                     move.Score = Minimax(state, UltimateBoard.PlayerX, level + 1).Score;
                 }
 
-                //Reset boards back to saved state
                 state.UltimateBoard.Board = board;
                 state.UltimateBoard.Macroboard = macroboard;
             }
 
-
-            // Return best move
             if (player == UltimateBoard.PlayerX)
             {
                 return moves.Max();
@@ -108,7 +101,7 @@ namespace UltimateTicTacToeMinimax.Bot
                 return moves.Min();
             }
         }
-                
+
         static void Main(string[] args)
         {
             BotParser parser = new BotParser(new SmartBot());
